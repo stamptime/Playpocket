@@ -3,10 +3,6 @@ import axios from 'axios';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import {useNavigate} from 'react-router-dom';
-
-
-import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
 
 
 
@@ -22,7 +18,6 @@ const Card = () => {
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(false);
 
-
   const storedData = JSON.parse(localStorage.getItem('playground-response'));
 
 
@@ -31,13 +26,14 @@ const Card = () => {
     if(data){
 
       if(data.code== 200){
-
+        console.log(data)
         const asignaturesList = data.data
-    
+        
         const templateData = asignaturesList
         .filter(asignature => asignature.lesson.nextOnSite != null)
         .map(asignature => {return({
           
+          id: asignature.id,
           name: asignature.name,
           alias: asignature.alias,
           lesson: asignature.live_class_url,
@@ -143,9 +139,24 @@ const Card = () => {
   },[data,templateData])
 
 
+  const handleClick = (classid, url) => {
+    if(url!=undefined && classid!=undefined){
+      window.open(url, '_blank')
+      axios.post(`https://playground-course-api.digitalhouse.com/v1/api/students/${storedData.user_id}/courses/${classid}/attendance`,{},{
+        headers:{
+          'tenant-id': storedData.tenant_id,
+          authorization: storedData.token
+        }
+      }).then(res => console.log('Asistencia registrada correctamente')).catch(err => console.log('ocurrio un error al marcar asistencia'))
+  
+    };
+  
+  }
+
+
   return (
     <>
-      <CardView handleReloadClick={handleReloadClick} nextClass={nextClass} actualClass={actualClass}/>
+      <CardView handleClick={handleClick} nextClass={nextClass} actualClass={actualClass}/>
     </>
   )
 
@@ -153,14 +164,11 @@ const Card = () => {
 
 
 
-const CardView = ({handleReloadClick, nextClass, actualClass}) => {
+const CardView = ({handleClick, nextClass, actualClass}) => {
 
   const resultClass = actualClass ? actualClass : nextClass;
 
 
-  const handleClick = (url) => {
-    if(url!=undefined) window.open(url, '_blank');
-  }
 
   return (
       <>
@@ -187,7 +195,7 @@ const CardView = ({handleReloadClick, nextClass, actualClass}) => {
                 color: 'white',
                 fontWeight: '',
 
-                }}>{resultClass && "Siguiente clase"}</Typography>
+                }}>{resultClass.status=="now"?'En curso':'Siguiente clase' || ""}</Typography>
 
                 <Typography variant="h5" component="div" sx={{
 
@@ -198,12 +206,12 @@ const CardView = ({handleReloadClick, nextClass, actualClass}) => {
 
             </div>  
 
-              <Button onClick={() => handleClick(resultClass.lesson)} variant="contained" color="secondary" sx={{ 
+              <Button onClick={() => handleClick(resultClass.id,resultClass.lesson)} variant="contained" color="secondary" sx={{ 
                 backgroundColor: '#4f23a1',
               }}>{resultClass && "Ir a la reunion"}</Button>
               
 
-              <Button onClick={handleReloadClick} size="small" color="primary" variant="outlined" sx={{
+              <Button size="small" color="primary" variant="outlined" sx={{
                 position: 'absolute',
                 borderRadius: '25px',
                 border: '1px solid #06ff00',
